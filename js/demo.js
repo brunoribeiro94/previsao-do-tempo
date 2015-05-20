@@ -1,5 +1,12 @@
 $(document).ready(function () {
     
+   /**
+     * 
+     * get condition
+     * 
+     * @param {int} code
+     * @returns string
+     */
     function getConditions(code) {
         var result = 'undefined';
         switch (code) {
@@ -184,20 +191,21 @@ $(document).ready(function () {
             return diaF;
         }
     }
-    
+
     function FtoC(temperature) {
         f = (temperature - 32) * 5 / 7;
         return f.toPrecision(2);
     }
-    
+
     function getSkyIcon(code) {
         result = 'clear-day';
         switch (code) {
             case "26":
-            case "30":
-                result = 'PARTLY_CLOUDY_DAY';
+                result = 'cloudy';
                 break;
-            case "45":
+            case "30":
+                result = 'partly-cloudy-day';
+                break;
             case "47":
                 result = 'cloudy';
                 break;
@@ -206,13 +214,104 @@ $(document).ready(function () {
                 break;
             case "11":
             case "12":
+            case "45":
                 result = 'sleet';
                 break;
             case "34":
                 result = 'clear-day';
                 break;
+            case "27":
+            case "29":
+                result = 'partly-cloudy-night';
+                break;
+            case "33":
+            case "31":
+                result = 'clear-night';
+                break;
+            case "24":
+                result = 'wind';
+                break;
+            case "5":
+            case "7":
+            case "13":
+            case "14":
+            case "15":
+            case "16":
+            case "18":
+            case "43":
+            case "41":
+            case "42":
+            case "46":
+                result = 'snow';
+                break;
+            case "21":
+                result = 'fog';
+                break;
         }
         return result;
     }
+
+     $("#getloc").click(function () {
+        navigator.geolocation.getCurrentPosition(locateSuccess, locateFail);
+
+        function locateSuccess(position) {
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+            $.getJSON("../ajax/weather.php?request=myGeoLocation&latitude=" + latitude + "&longitude=" + longitude, function (json) {
+                var location = json.query["results"].channel["location"];
+                var $conditions = json.query["results"].channel["item"].condition;
+                var date = new Date(json.query["created"]);
+                var mph = json.query["results"].channel["wind"].chill;
+                var humidity = json.query["results"].channel["atmosphere"].humidity;
+                var $nextDays = json.query["results"].channel["item"].forecast;
+                var icons_grey = new Skycons({
+                    "color": "#8b91a0"
+                });
+
+                $("#weather_title").html(location.city + " " + location.region);
+                $("#weather_temp").html(FtoC($conditions["temp"])); // calculate temperature from Fº to Cº
+                $("#weather_condition").html(getConditions($conditions["code"]));
+
+                $("#weather_current_day").html(getDayName(date.getDay()), true, false);
+                $("#weather_mph").html(mph);
+                $("#weather_humidity").html(humidity + "%");
+                $("#weather_nextdays").html('');
+                var i = 0;
+                $.each($nextDays, function (k, obj) {
+                    i++;
+                    $("#weather_nextdays").append('<div class="p-b-10 m-b-10 b-grey b-b">' +
+                            '<div class="pull-left"> <span class="bold text-black m-r-15 text-right">' + getDayName(obj['day'], false, true) + '</span>' +
+                            '<canvas id="skycons_widget_' + i + '" width="20" height="20" class="inline m-l-10"></canvas>' +
+                            '<p class="bold text-extra-small semi-bold text-grey">' + getConditions(obj['code']) + '</p>' +
+                            '</div>' +
+                            '<div class="pull-right"> <span class="semi-bold text-grey">' + FtoC(obj['low']) + ' - ' + FtoC(obj['high']) + '</span> <span class="bold text-error">&deg; C</span> </div>' +
+                            '<div class="clearfix"></div>' +
+                            '</div>'
+                            );
+                    icons_grey.set("skycons_widget_" + i, getSkyIcon(obj['code']));
+                });
+                icons_grey.set("#widget-2-cloudy-big", getSkyIcon($conditions["code"]));
+            });
+        }
+        
+        // Unsuccessful geolocation 
+        function locateFail(geoPositionError) {
+            switch (geoPositionError.code) {
+                case 0: // UNKNOWN_ERROR 
+                    alert('An unknown error occurred, sorry');
+                    break;
+                case 1: // PERMISSION_DENIED 
+                    alert('Permission to use Geolocation was denied');
+                    break;
+                case 2: // POSITION_UNAVAILABLE 
+                    alert("Couldn't find you...");
+                    break;
+                case 3: // TIMEOUT 
+                    alert('The Geolocation request took too long and timed out');
+                    break;
+                default:
+            }
+        }
+    });
     
 });
