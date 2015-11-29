@@ -1,6 +1,25 @@
 <?php
 
+/**
+ * Classe previsão do tempo
+ * 
+ * @author Bruno Ribeiro <offboard@hotmail.com>
+ * @version 0.1
+ * @access public
+ * @package Previsão do tempo
+ * */
 class weather{
+    
+    /**
+     * Geo location
+     * 
+     * @var array
+     */
+     private $geoLocation = array(
+         "lat" => NULL,
+         "lon" => NULL
+     );
+
 
     /**
      * Magic Metthod
